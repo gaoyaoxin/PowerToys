@@ -99,9 +99,9 @@ IFACEMETHODIMP CPowerRenameManager::Rename(_In_ HWND hwndParent, bool closeWindo
     return _PerformFileOperation();
 }
 
-IFACEMETHODIMP CPowerRenameManager::UpdateChildrenPath(_In_ int id)
+IFACEMETHODIMP CPowerRenameManager::UpdateChildrenPath(_In_ int parentId, _In_ size_t oldParentPathSize)
 {
-    auto parentIt = m_renameItems.find(id);
+    auto parentIt = m_renameItems.find(parentId);
     if (parentIt != m_renameItems.end())
     {
         UINT depth = 0;
@@ -111,7 +111,7 @@ IFACEMETHODIMP CPowerRenameManager::UpdateChildrenPath(_In_ int id)
         winrt::check_hresult(parentIt->second->GetPath(&renamedPath));
         std::wstring renamedPathStr{ renamedPath };
 
-        for (auto it = parentIt; it != m_renameItems.end(); ++it)
+        for (auto it = ++parentIt; it != m_renameItems.end(); ++it)
         {
             UINT nextDepth = 0;
             winrt::check_hresult(it->second->GetDepth(&nextDepth));
@@ -130,7 +130,7 @@ IFACEMETHODIMP CPowerRenameManager::UpdateChildrenPath(_In_ int id)
                     pos = pathStr.rfind(L"\\", pos);
                     --depthDiff;
                 }
-                std::wstring newPath = pathStr.replace(0, renamedPathStr.size() - 1, renamedPath);
+                std::wstring newPath = pathStr.replace(0, oldParentPathSize - 1, renamedPath);
             }
         }
     }
@@ -807,7 +807,7 @@ DWORD WINAPI CPowerRenameManager::s_fileOpWorkerThread(_In_ void* pv)
                                                     {
                                                         int id = -1;
                                                         winrt::check_hresult(spItem->GetId(&id));
-                                                        pwtd->spsrm->UpdateChildrenPath(id);
+                                                        pwtd->spsrm->UpdateChildrenPath(id, originalNameStr.size());
                                                     }
 
                                                     spItem->PutOriginalName(newName);
